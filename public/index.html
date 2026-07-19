@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Учёт занятий</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* iOS26-style «жидкое стекло» — бежево-розовая палитра */
+  --bg1:#f5e6da; --bg2:#f2d9d6; --bg3:#ecc4c9;
+  --panel:rgba(255,255,255,0.62); --panel-solid:#ffffff; --panel-soft:#fbf1ea;
+  --ink:#4a3b36; --ink2:#8f7a71; --ink3:#b8a89e;
+  --accent:#d98a9c; --accent2:#c98b6e; --accent-ink:#ffffff;
+  --ok:#7fae74; --sick:#d99a4e; --skip:#b9a89d; --danger:#d9707c;
+  --radius:26px; --radius-sm:16px;
+  --shadow: 0 18px 40px rgba(150,100,90,0.16);
+  --glass-border: 1px solid rgba(255,255,255,0.7);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Manrope',system-ui,sans-serif;color:var(--ink);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(255,255,255,0.55), transparent 45%),
+    linear-gradient(165deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+  min-height:100vh;}
+h1,h2,h3,.serif{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Manrope',system-ui,sans-serif;font-weight:800;letter-spacing:-.01em;}
+button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+input,select,textarea{font-family:inherit;}
+
+/* ── Login ── */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+#login-card{background:var(--panel);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border:var(--glass-border);border-radius:32px;padding:44px 32px;width:100%;max-width:360px;box-shadow:var(--shadow);text-align:center;}
+#login-card h1{font-size:28px;margin:0 0 6px;color:var(--ink);}
+#login-sub{color:var(--ink3);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:28px;}
+#login-code{width:100%;text-align:center;font-size:24px;letter-spacing:.3em;padding:14px;border-radius:18px;border:1.5px solid rgba(217,138,156,0.25);background:var(--panel-soft);color:var(--ink);margin-bottom:14px;}
+#login-code:focus{outline:none;border-color:var(--accent);}
+#login-btn{width:100%;padding:15px;border:none;border-radius:999px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:700;font-size:15px;box-shadow:0 10px 24px rgba(217,138,156,0.35);}
+#login-error{color:var(--danger);font-size:12px;font-weight:600;min-height:16px;margin-top:10px;}
+
+/* ── App shell ── */
+#app{display:none;max-width:920px;margin:0 auto;padding:16px 14px 90px;}
+header.topbar{display:flex;align-items:center;justify-content:space-between;color:var(--ink);padding:10px 4px 18px;}
+header.topbar h1{font-size:24px;margin:0;color:var(--ink);}
+header.topbar .who{font-size:11px;color:var(--ink2);text-transform:uppercase;letter-spacing:.1em;font-weight:700;}
+#logout-btn{background:var(--panel);backdrop-filter:blur(14px);border:var(--glass-border);color:var(--ink);border-radius:999px;padding:9px 16px;font-size:12px;font-weight:700;}
+
+nav.tabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:16px;padding:4px;background:var(--panel);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:var(--glass-border);border-radius:20px;}
+nav.tabs button{flex:0 0 auto;background:transparent;color:var(--ink2);border:none;border-radius:16px;padding:10px 16px;font-weight:700;font-size:13px;white-space:nowrap;transition:background .15s,color .15s;}
+nav.tabs button.active{background:var(--panel-solid);color:var(--ink);box-shadow:0 4px 12px rgba(150,100,90,0.15);}
+
+.card{background:var(--panel);backdrop-filter:blur(20px) saturate(180%);-webkit-backdrop-filter:blur(20px) saturate(180%);border:var(--glass-border);border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--shadow);}
+.card h2{margin:0 0 14px;font-size:18px;display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap;color:var(--ink);}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px;}
+.field label{font-size:11px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+.field input,.field select,.field textarea{padding:11px 13px;border-radius:14px;border:1.5px solid rgba(217,138,156,0.18);background:var(--panel-soft);font-size:14px;color:var(--ink);}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);}
+.btn{border:none;border-radius:999px;padding:10px 18px;font-weight:700;font-size:13px;transition:transform .1s;}
+.btn:active{transform:scale(0.96);}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 6px 16px rgba(217,138,156,0.3);}
+.btn-accent{background:var(--panel-solid);color:var(--accent);border:1.5px solid rgba(217,138,156,0.35);}
+.btn-ghost{background:var(--panel-soft);color:var(--ink2);}
+.btn-danger{background:#fbe3e6;color:var(--danger);}
+.btn-sm{padding:7px 12px;font-size:12px;}
+
+/* Calendar */
+#cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+#cal-nav .lbl{font-size:17px;font-weight:800;color:var(--ink);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cal-wd{font-size:10px;text-align:center;color:var(--ink3);font-weight:800;text-transform:uppercase;padding-bottom:4px;}
+.cal-day{aspect-ratio:1/1;border-radius:14px;background:var(--panel-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;font-weight:700;position:relative;color:var(--ink2);border:2px solid transparent;}
+.cal-day.empty{background:transparent;}
+.cal-day.has-sessions{background:#f6e2e6;color:var(--ink);}
+.cal-day.today{border-color:var(--accent);}
+.cal-day.selected{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;}
+.cal-day .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:3px;}
+.cal-day.selected .dot{background:#fff;}
+
+.sess-block{border:1.5px solid rgba(217,138,156,0.16);border-radius:18px;padding:12px;margin-bottom:10px;background:rgba(255,255,255,0.35);}
+.sess-block .sess-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
+.sess-block .sess-title{font-weight:800;font-size:15px;color:var(--ink);}
+.stud-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-top:1px solid rgba(217,138,156,0.12);}
+.stud-row:first-of-type{border-top:none;}
+.stud-name{font-weight:600;font-size:14px;flex:1;}
+.status-pill{border:none;border-radius:20px;padding:5px 10px;font-size:11px;font-weight:800;}
+.status-planned{background:#f1e6e2;color:var(--ink2);}
+.status-came{background:#e6f2e2;color:var(--ok);}
+.status-sick{background:#fbeed8;color:var(--sick);}
+.status-skipped{background:#efe8e4;color:var(--skip);}
+.price-tag{font-size:12px;color:var(--ink3);font-weight:700;min-width:56px;text-align:right;}
+
+.list-item{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid rgba(217,138,156,0.12);gap:10px;}
+.list-item:first-of-type{border-top:none;}
+.list-item .meta{font-size:12px;color:var(--ink3);}
+
+.empty-note{color:var(--ink3);font-size:13px;text-align:center;padding:20px 0;}
+
+dialog{border:none;border-radius:28px;padding:0;max-width:420px;width:92vw;box-shadow:var(--shadow);background:var(--panel-solid);}
+dialog::backdrop{background:rgba(74,59,54,0.4);backdrop-filter:blur(4px);}
+dialog .dcontent{padding:24px;}
+dialog h3{margin:0 0 16px;font-size:19px;color:var(--ink);}
+
+.badge-role{font-size:10px;font-weight:800;padding:3px 8px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;text-transform:uppercase;}
+.balance-good{color:var(--ok);font-weight:800;}
+.balance-bad{color:var(--danger);font-weight:800;}
+@media(min-width:640px){#app{padding-top:24px;}}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div id="login-card">
+    <h1>Учёт занятий</h1>
+    <div id="login-sub">Вход по коду</div>
+    <input id="login-code" maxlength="6" inputmode="numeric" placeholder="••••">
+    <button id="login-btn" class="btn">Войти</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<div id="app">
+  <header class="topbar">
+    <div>
+      <h1>Учёт занятий</h1>
+      <div class="who" id="who-label"></div>
+    </div>
+    <button id="logout-btn">Выйти</button>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="cal">📅 Календарь</button>
+    <button data-tab="students">👥 Ученики</button>
+    <button data-tab="groups">🏷️ Группы и цены</button>
+    <button data-tab="payments">💵 Оплата</button>
+    <button data-tab="codes" id="codes-tab-btn" style="display:none;">🔑 Коды</button>
+  </nav>
+
+  <section id="tab-cal"></section>
+  <section id="tab-students" style="display:none;"></section>
+  <section id="tab-groups" style="display:none;"></section>
+  <section id="tab-payments" style="display:none;"></section>
+  <section id="tab-codes" style="display:none;"></section>
+</div>
+
+<dialog id="dlg"><div class="dcontent" id="dlg-content"></div></dialog>
+
+<script>
+// ── Состояние ─────────────────────────────────────────────────────────────
+let AUTH = JSON.parse(localStorage.getItem('uchet_auth') || 'null'); // {code, role, name}
+let STATE = { groups: [], students: [], codes: [] };
+let CAL_YM = new Date(); // текущий отображаемый месяц
+let SELECTED_DATE = null;
+let MONTH_SUMMARY = {};
+
+const $ = sel => document.querySelector(sel);
+const $$ = sel => Array.from(document.querySelectorAll(sel));
+// Отображение дней недели начиная с понедельника. Числовые значения (для recur.weekday
+// и Date.getDay()) остаются стандартными JS-значениями: 0=Вс,1=Пн,...,6=Сб.
+const WEEKDAYS_MON = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+function monIndexToJsWeekday(i){ return (i+1)%7; }      // 0(Пн)->1 ... 6(Вс)->0
+function jsWeekdayToMonIndex(w){ return (w+6)%7; }      // 1(Пн)->0 ... 0(Вс)->6
+function weekdayLabel(jsWeekday){ return WEEKDAYS_MON[jsWeekdayToMonIndex(jsWeekday)]; }
+const NTH_LABELS = {1:'первый',2:'второй',3:'третий',4:'четвёртый',5:'пятый',[-1]:'последний'};
+function studentFullName(s){
+  if (!s) return '(удалён)';
+  const n = [s.lastName, s.firstName].filter(Boolean).join(' ').trim();
+  return n || '(без имени)';
+}
+
+function fmtDate(d){ return d.toISOString().slice(0,10); }
+function todayStr(){ return fmtDate(new Date()); }
+function ruMonth(d){ return d.toLocaleDateString('ru-RU',{month:'long',year:'numeric'}); }
+function ruDate(dateStr){ const d=new Date(dateStr+'T00:00:00'); return d.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'}); }
+function money(n){ return (n||0).toLocaleString('ru-RU') + ' ₽'; }
+
+async function api(path, opts={}) {
+  const headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+  if (AUTH) headers['x-auth-code'] = AUTH.code;
+  const res = await fetch(path, Object.assign({}, opts, { headers }));
+  let json;
+  try { json = await res.json(); } catch(e) { json = { ok:false, error:'Некорректный ответ сервера' }; }
+  if (!res.ok || json.ok === false) throw new Error(json.error || ('Ошибка ' + res.status));
+  return json;
+}
+
+// ── Вход ──────────────────────────────────────────────────────────────────
+$('#login-btn').addEventListener('click', doLogin);
+$('#login-code').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+async function doLogin(){
+  const code = $('#login-code').value.trim();
+  $('#login-error').textContent = '';
+  if (!code) return;
+  try {
+    const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({code}) });
+    const d = await r.json();
+    if (!d.ok) { $('#login-error').textContent = d.error || 'Неверный код'; return; }
+    AUTH = { code, role: d.role, name: d.name };
+    localStorage.setItem('uchet_auth', JSON.stringify(AUTH));
+    boot();
+  } catch(e) { $('#login-error').textContent = 'Сервер недоступен'; }
+}
+$('#logout-btn').addEventListener('click', ()=>{
+  AUTH = null; localStorage.removeItem('uchet_auth');
+  $('#app').style.display='none'; $('#login-screen').style.display='flex';
+  $('#login-code').value='';
+});
+
+async function boot(){
+  try {
+    const st = await api('/api/state');
+    STATE.groups = st.groups; STATE.students = st.students; STATE.codes = st.codes || [];
+    $('#who-label').textContent = st.name + ' · ' + (st.role==='admin' ? 'администратор' : 'просмотр');
+    $('#codes-tab-btn').style.display = st.role==='admin' ? '' : 'none';
+    $('#login-screen').style.display='none'; $('#app').style.display='block';
+    setActiveTab('cal');
+  } catch(e) {
+    AUTH = null; localStorage.removeItem('uchet_auth');
+    $('#login-error').textContent = 'Сессия истекла, войдите снова';
+  }
+}
+if (AUTH) boot();
+
+// ── Табы ──────────────────────────────────────────────────────────────────
+$('#tabs').addEventListener('click', e=>{
+  const b = e.target.closest('button[data-tab]'); if (!b) return;
+  setActiveTab(b.dataset.tab);
+});
+function setActiveTab(tab){
+  $$('#tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  ['cal','students','groups','payments','codes'].forEach(t=>{
+    $('#tab-'+t).style.display = (t===tab) ? 'block' : 'none';
+  });
+  if (tab==='cal') renderCalendar();
+  if (tab==='students') renderStudents();
+  if (tab==='groups') renderGroups();
+  if (tab==='payments') renderPayments();
+  if (tab==='codes') renderCodes();
+}
+
+const isAdmin = () => AUTH && AUTH.role==='admin';
+
+// ══════════════════════════════ КАЛЕНДАРЬ ══════════════════════════════
+async function renderCalendar(){
+  const c = $('#tab-cal');
+  const ym = CAL_YM.getFullYear() + '-' + String(CAL_YM.getMonth()+1).padStart(2,'0');
+  let summary = {};
+  try { summary = (await api('/api/month/'+ym)).summary; } catch(e){}
+  MONTH_SUMMARY = summary;
+
+  const first = new Date(CAL_YM.getFullYear(), CAL_YM.getMonth(), 1);
+  const startOffset = jsWeekdayToMonIndex(first.getDay()); // неделя начинается с понедельника
+  const daysInMonth = new Date(CAL_YM.getFullYear(), CAL_YM.getMonth()+1, 0).getDate();
+
+  let cells = '';
+  for (let i=0;i<startOffset;i++) cells += '<div class="cal-day empty"></div>';
+  for (let d=1; d<=daysInMonth; d++){
+    const dateStr = ym+'-'+String(d).padStart(2,'0');
+    const has = summary[dateStr];
+    const classes = ['cal-day'];
+    if (has) classes.push('has-sessions');
+    if (dateStr===todayStr()) classes.push('today');
+    if (dateStr===SELECTED_DATE) classes.push('selected');
+    cells += `<div class="${classes.join(' ')}" data-date="${dateStr}">${d}${has?'<div class="dot"></div>':''}</div>`;
+  }
+
+  c.innerHTML = `
+    <div class="card">
+      <div id="cal-nav">
+        <button class="btn btn-ghost btn-sm" id="cal-prev">← </button>
+        <div class="lbl serif">${ruMonth(CAL_YM)}</div>
+        <button class="btn btn-ghost btn-sm" id="cal-next"> →</button>
+      </div>
+      <div class="cal-grid">
+        ${WEEKDAYS_MON.map(w=>'<div class="cal-wd">'+w+'</div>').join('')}
+        ${cells}
+      </div>
+    </div>
+    <div id="day-detail"></div>
+  `;
+  $('#cal-prev').onclick = ()=>{ CAL_YM = new Date(CAL_YM.getFullYear(), CAL_YM.getMonth()-1, 1); renderCalendar(); };
+  $('#cal-next').onclick = ()=>{ CAL_YM = new Date(CAL_YM.getFullYear(), CAL_YM.getMonth()+1, 1); renderCalendar(); };
+  $$('.cal-day[data-date]').forEach(el=>{
+    el.addEventListener('click', ()=>{ SELECTED_DATE = el.dataset.date; renderCalendar(); renderDayDetail(); });
+  });
+  if (SELECTED_DATE) renderDayDetail();
+}
+
+async function renderDayDetail(){
+  const box = $('#day-detail');
+  if (!box) return;
+  box.innerHTML = '<div class="card"><div class="empty-note">Загрузка…</div></div>';
+  let day;
+  try { day = await api('/api/day/'+SELECTED_DATE); } catch(e){ box.innerHTML='<div class="card"><div class="empty-note">Ошибка загрузки</div></div>'; return; }
+
+  const addBtn = isAdmin() ? `<button class="btn btn-accent btn-sm" id="add-sess-btn">+ Занятие</button>` : '';
+  let sessionsHtml = '';
+  if (!day.sessions.length){
+    sessionsHtml = '<div class="empty-note">На этот день ничего не запланировано</div>';
+  } else {
+    sessionsHtml = day.sessions.map(sess=>{
+      const group = STATE.groups.find(g=>g.id===sess.groupId);
+      const studRows = sess.students.map(st=>`
+        <div class="stud-row" data-sid="${st.studentId}" data-sess="${sess.id}">
+          <div class="stud-name">${escapeHtml(st.name)}</div>
+          <div class="price-tag">${money(st.price)}</div>
+          ${isAdmin() ? `
+          <select class="status-select" data-sess="${sess.id}" data-sid="${st.studentId}">
+            <option value="planned" ${st.status==='planned'?'selected':''}>Запланировано</option>
+            <option value="came" ${st.status==='came'?'selected':''}>Пришёл</option>
+            <option value="sick" ${st.status==='sick'?'selected':''}>Заболел</option>
+            <option value="skipped" ${st.status==='skipped'?'selected':''}>Пропуск</option>
+          </select>
+          <button class="btn btn-danger btn-sm rm-stud" data-sess="${sess.id}" data-sid="${st.studentId}">✕</button>
+          ` : `<span class="status-pill status-${st.status}">${({planned:'Запланировано',came:'Пришёл',sick:'Заболел',skipped:'Пропуск'})[st.status]}</span>`}
+        </div>
+      `).join('') || '<div class="empty-note">Нет учеников</div>';
+      return `
+        <div class="sess-block" data-sess-id="${sess.id}">
+          <div class="sess-head">
+            <div class="sess-title">${escapeHtml(sess.title || (group?group.name:'Занятие'))}${sess.time?' · '+sess.time:''}</div>
+            ${isAdmin() ? `<div class="row" style="gap:6px;">
+              <button class="btn btn-ghost btn-sm add-stud-btn" data-sess="${sess.id}" data-group="${sess.groupId||''}">+ Ученик</button>
+              <button class="btn btn-danger btn-sm del-sess-btn" data-sess="${sess.id}">Удалить</button>
+            </div>` : ''}
+          </div>
+          ${studRows}
+        </div>
+      `;
+    }).join('');
+  }
+
+  box.innerHTML = `
+    <div class="card">
+      <h2>${ruDate(SELECTED_DATE)} ${addBtn}</h2>
+      ${sessionsHtml}
+    </div>
+  `;
+
+  $('#add-sess-btn')?.addEventListener('click', openAddSessionDialog);
+  $$('.del-sess-btn').forEach(b=>b.addEventListener('click', async ()=>{
+    if (!confirm('Удалить это занятие на выбранный день?')) return;
+    await api('/api/day/'+SELECTED_DATE+'/session/'+b.dataset.sess, {method:'DELETE'});
+    renderDayDetail(); renderCalendar();
+  }));
+  $$('.add-stud-btn').forEach(b=>b.addEventListener('click', ()=>openAddStudentToSessionDialog(b.dataset.sess)));
+  $$('.rm-stud').forEach(b=>b.addEventListener('click', async ()=>{
+    await api('/api/day/'+SELECTED_DATE+'/session/'+b.dataset.sess+'/student/'+b.dataset.sid, {method:'DELETE'});
+    renderDayDetail();
+  }));
+  $$('.status-select').forEach(sel=>sel.addEventListener('change', async ()=>{
+    await api('/api/day/'+SELECTED_DATE+'/session/'+sel.dataset.sess+'/student/'+sel.dataset.sid, {method:'PUT', body: JSON.stringify({status: sel.value})});
+    renderDayDetail();
+  }));
+}
+
+function openAddSessionDialog(){
+  const groupOptions = STATE.groups.map(g=>`<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+  showDialog('Новое занятие на '+ruDate(SELECTED_DATE), `
+    <div class="field"><label>Тип / группа (необязательно)</label>
+      <select id="ns-group"><option value="">— без группы —</option>${groupOptions}</select>
+    </div>
+    <div class="field" style="margin-top:10px;"><label>Название занятия</label>
+      <input id="ns-title" placeholder="напр. Лепка, День рождения…">
+    </div>
+    <div class="field" style="margin-top:10px;"><label>Время (необязательно)</label>
+      <input id="ns-time" placeholder="напр. 16:00">
+    </div>
+    <div class="row" style="margin-top:16px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeDialog()">Отмена</button>
+      <button class="btn btn-primary" id="ns-save">Создать</button>
+    </div>
+  `);
+  $('#ns-group').addEventListener('change', ()=>{
+    const g = STATE.groups.find(x=>x.id===$('#ns-group').value);
+    if (g && !$('#ns-title').value) $('#ns-title').value = g.name;
+  });
+  $('#ns-save').addEventListener('click', async ()=>{
+    await api('/api/day/'+SELECTED_DATE+'/session', {method:'POST', body: JSON.stringify({
+      groupId: $('#ns-group').value || null, title: $('#ns-title').value.trim() || 'Занятие', time: $('#ns-time').value.trim()
+    })});
+    closeDialog(); renderDayDetail(); renderCalendar();
+  });
+}
+
+function openAddStudentToSessionDialog(sessId){
+  const options = STATE.students.map(s=>`<option value="${s.id}">${escapeHtml(studentFullName(s))}</option>`).join('');
+  showDialog('Добавить ученика', `
+    <div class="field"><label>Ученик</label><select id="as-student">${options}</select></div>
+    <div class="row" style="margin-top:16px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeDialog()">Отмена</button>
+      <button class="btn btn-primary" id="as-save">Добавить</button>
+    </div>
+  `);
+  $('#as-save').addEventListener('click', async ()=>{
+    await api('/api/day/'+SELECTED_DATE+'/session/'+sessId+'/student', {method:'POST', body: JSON.stringify({studentId: $('#as-student').value})});
+    closeDialog(); renderDayDetail();
+  });
+}
+
+// ══════════════════════════════ УЧЕНИКИ ══════════════════════════════
+function renderStudents(){
+  const c = $('#tab-students');
+  const addBtn = isAdmin() ? '<button class="btn btn-accent btn-sm" id="add-student-btn">+ Ученик</button>' : '';
+  const rows = STATE.students.map(s=>{
+    const group = STATE.groups.find(g=>g.id===s.groupId);
+    let recurLabel = 'без повтора';
+    if (s.recur){
+      const time = s.recur.time ? ' в ' + s.recur.time : '';
+      if (s.recur.type==='weekly') recurLabel = 'каждую неделю по ' + weekdayLabel(s.recur.weekday).toLowerCase() + 'ам' + time;
+      else recurLabel = (NTH_LABELS[s.recur.nth]||s.recur.nth) + ' ' + weekdayLabel(s.recur.weekday).toLowerCase() + ' месяца' + time;
+    }
+    const parentMeta = [s.parentName, s.parentPhone].filter(Boolean).join(', ');
+    return `<div class="list-item">
+      <div>
+        <div style="font-weight:700;">${escapeHtml(studentFullName(s))}</div>
+        <div class="meta">${group?escapeHtml(group.name):'без группы'} · ${recurLabel}</div>
+        ${parentMeta?`<div class="meta">Родитель: ${escapeHtml(parentMeta)}</div>`:''}
+      </div>
+      ${isAdmin()?`<div class="row" style="gap:6px;">
+        <button class="btn btn-ghost btn-sm edit-student" data-id="${s.id}">✎</button>
+        <button class="btn btn-danger btn-sm del-student" data-id="${s.id}">✕</button>
+      </div>`:''}
+    </div>`;
+  }).join('') || '<div class="empty-note">Учеников пока нет</div>';
+
+  c.innerHTML = `<div class="card"><h2>Ученики ${addBtn}</h2>${rows}</div>`;
+  $('#add-student-btn')?.addEventListener('click', ()=>openStudentDialog(null));
+  $$('.edit-student').forEach(b=>b.addEventListener('click', ()=>openStudentDialog(STATE.students.find(s=>s.id===b.dataset.id))));
+  $$('.del-student').forEach(b=>b.addEventListener('click', async ()=>{
+    if (!confirm('Удалить ученика? Записи в календаре останутся, но без привязки.')) return;
+    await api('/api/students/'+b.dataset.id, {method:'DELETE'});
+    STATE.students = STATE.students.filter(s=>s.id!==b.dataset.id);
+    renderStudents();
+  }));
+}
+
+function openStudentDialog(s){
+  const groupOptions = STATE.groups.map(g=>`<option value="${g.id}" ${s&&s.groupId===g.id?'selected':''}>${escapeHtml(g.name)}</option>`).join('');
+  const recurType = s?.recur?.type || 'none';
+  showDialog(s?'Редактировать ученика':'Новый ученик', `
+    <div class="row">
+      <div class="field"><label>Фамилия</label><input id="sd-lastname" value="${s?escapeHtml(s.lastName||''):''}"></div>
+      <div class="field"><label>Имя</label><input id="sd-firstname" value="${s?escapeHtml(s.firstName||''):''}"></div>
+    </div>
+    <div class="field" style="margin-top:10px;"><label>Имя и отчество родителя</label><input id="sd-parentname" value="${s?escapeHtml(s.parentName||''):''}"></div>
+    <div class="field" style="margin-top:10px;"><label>Телефон родителя</label><input id="sd-parentphone" value="${s?escapeHtml(s.parentPhone||''):''}"></div>
+    <div class="field" style="margin-top:10px;"><label>Группа / тип занятия</label><select id="sd-group"><option value="">— без группы —</option>${groupOptions}</select></div>
+    <div class="field" style="margin-top:10px;"><label>Повтор</label>
+      <select id="sd-recur-type">
+        <option value="none" ${recurType==='none'?'selected':''}>Без повтора (разово в календаре)</option>
+        <option value="weekly" ${recurType==='weekly'?'selected':''}>Каждую неделю</option>
+        <option value="nth" ${recurType==='nth'?'selected':''}>Определённая неделя месяца (напр. второй вторник)</option>
+      </select>
+    </div>
+    <div class="row" id="sd-recur-extra" style="margin-top:10px;"></div>
+    <div class="row" style="margin-top:16px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeDialog()">Отмена</button>
+      <button class="btn btn-primary" id="sd-save">Сохранить</button>
+    </div>
+  `);
+  function renderRecurExtra(){
+    const t = $('#sd-recur-type').value;
+    const wd = s?.recur?.weekday ?? 1; // по умолчанию понедельник
+    const nth = s?.recur?.nth ?? 2;
+    const time = s?.recur?.time ?? '';
+    if (t==='none'){ $('#sd-recur-extra').innerHTML=''; return; }
+    const wdOptions = WEEKDAYS_MON.map((w,i)=>{ const jsW = monIndexToJsWeekday(i); return `<option value="${jsW}" ${jsW==wd?'selected':''}>${w}</option>`; }).join('');
+    let nthOptions = '';
+    if (t==='nth') nthOptions = `<div class="field"><label>Какая неделя</label><select id="sd-nth">
+      ${[1,2,3,4,5].map(n=>`<option value="${n}" ${n==nth?'selected':''}>${NTH_LABELS[n]}</option>`).join('')}
+      <option value="-1" ${nth==-1?'selected':''}>последний</option>
+    </select></div>`;
+    $('#sd-recur-extra').innerHTML = `<div class="field"><label>День недели</label><select id="sd-weekday">${wdOptions}</select></div>${nthOptions}<div class="field"><label>Время</label><input id="sd-time" type="time" value="${escapeHtml(time)}"></div>`;
+  }
+  $('#sd-recur-type').addEventListener('change', renderRecurExtra);
+  renderRecurExtra();
+
+  $('#sd-save').addEventListener('click', async ()=>{
+    const lastName = $('#sd-lastname').value.trim();
+    const firstName = $('#sd-firstname').value.trim();
+    if (!lastName && !firstName) return alert('Введите имя или фамилию');
+    const t = $('#sd-recur-type').value;
+    let recur = null;
+    if (t==='weekly') recur = { type:'weekly', weekday: Number($('#sd-weekday').value), time: $('#sd-time').value || '' };
+    if (t==='nth') recur = { type:'nth', weekday: Number($('#sd-weekday').value), nth: Number($('#sd-nth').value), time: $('#sd-time').value || '' };
+    const body = {
+      lastName, firstName,
+      parentName: $('#sd-parentname').value.trim(),
+      parentPhone: $('#sd-parentphone').value.trim(),
+      groupId: $('#sd-group').value || null, recur
+    };
+    if (s) {
+      const r = await api('/api/students/'+s.id, {method:'PUT', body: JSON.stringify(body)});
+      Object.assign(s, r.student);
+    } else {
+      const r = await api('/api/students', {method:'POST', body: JSON.stringify(body)});
+      STATE.students.push(r.student);
+    }
+    closeDialog(); renderStudents();
+  });
+}
+
+// ══════════════════════════════ ГРУППЫ И ЦЕНЫ ══════════════════════════════
+function renderGroups(){
+  const c = $('#tab-groups');
+  const addBtn = isAdmin() ? '<button class="btn btn-accent btn-sm" id="add-group-btn">+ Группа</button>' : '';
+  const rows = STATE.groups.map(g=>`
+    <div class="list-item">
+      <div>
+        <div style="font-weight:700;">${escapeHtml(g.name)}</div>
+        <div class="meta">Абонемент ${money(g.abonementPrice)} (4 занятия) · занятие ≈ ${money(Math.round(g.abonementPrice/4))} · при болезни ${money(Math.round(g.abonementPrice/4*0.75))} · ${g.duration} мин</div>
+      </div>
+      ${isAdmin()?`<div class="row" style="gap:6px;">
+        <button class="btn btn-ghost btn-sm edit-group" data-id="${g.id}">✎</button>
+        <button class="btn btn-danger btn-sm del-group" data-id="${g.id}">✕</button>
+      </div>`:''}
+    </div>
+  `).join('') || '<div class="empty-note">Групп пока нет</div>';
+  c.innerHTML = `<div class="card"><h2>Группы и цены ${addBtn}</h2>${rows}</div>`;
+  $('#add-group-btn')?.addEventListener('click', ()=>openGroupDialog(null));
+  $$('.edit-group').forEach(b=>b.addEventListener('click', ()=>openGroupDialog(STATE.groups.find(g=>g.id===b.dataset.id))));
+  $$('.del-group').forEach(b=>b.addEventListener('click', async ()=>{
+    if (!confirm('Удалить группу? У привязанных учеников группа станет пустой.')) return;
+    await api('/api/groups/'+b.dataset.id, {method:'DELETE'});
+    STATE.groups = STATE.groups.filter(g=>g.id!==b.dataset.id);
+    renderGroups();
+  }));
+}
+function openGroupDialog(g){
+  showDialog(g?'Редактировать группу':'Новая группа', `
+    <div class="field"><label>Название (напр. Лепка)</label><input id="gd-name" value="${g?escapeHtml(g.name):''}"></div>
+    <div class="field" style="margin-top:10px;"><label>Цена абонемента (4 занятия в месяц)</label><input id="gd-abon" type="number" value="${g?g.abonementPrice:8800}"></div>
+    <div class="field" style="margin-top:6px;"><span class="meta" id="gd-hint"></span></div>
+    <div class="field" style="margin-top:10px;"><label>Длительность (мин)</label><input id="gd-dur" type="number" value="${g?g.duration:60}"></div>
+    <div class="row" style="margin-top:16px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeDialog()">Отмена</button>
+      <button class="btn btn-primary" id="gd-save">Сохранить</button>
+    </div>
+  `);
+  function updateHint(){
+    const v = Number($('#gd-abon').value)||0;
+    $('#gd-hint').textContent = `Занятие ≈ ${money(Math.round(v/4))} · при болезни ${money(Math.round(v/4*0.75))} (минус четверть)`;
+  }
+  $('#gd-abon').addEventListener('input', updateHint);
+  updateHint();
+  $('#gd-save').addEventListener('click', async ()=>{
+    const body = { name: $('#gd-name').value.trim()||'Занятие', abonementPrice: Number($('#gd-abon').value)||0, duration: Number($('#gd-dur').value)||60 };
+    if (g) { const r = await api('/api/groups/'+g.id,{method:'PUT', body: JSON.stringify(body)}); Object.assign(g, r.group); }
+    else { const r = await api('/api/groups',{method:'POST', body: JSON.stringify(body)}); STATE.groups.push(r.group); }
+    closeDialog(); renderGroups();
+  });
+}
+
+// ══════════════════════════════ ОПЛАТА ══════════════════════════════
+async function renderPayments(){
+  const c = $('#tab-payments');
+  c.innerHTML = '<div class="card"><div class="empty-note">Загрузка…</div></div>';
+  let payments = [];
+  try { payments = (await api('/api/payments')).payments; } catch(e){}
+
+  const ym = CAL_YM.getFullYear() + '-' + String(CAL_YM.getMonth()+1).padStart(2,'0');
+  let monthDetail = {};
+  try { monthDetail = (await api('/api/month/'+ym+'/detail')).days; } catch(e){}
+
+  // считаем ожидаемую сумму за месяц по ученикам
+  const expected = {};
+  Object.values(monthDetail).forEach(sessions=>{
+    sessions.forEach(sess=>{
+      sess.students.forEach(st=>{
+        if (st.status==='skipped') return;
+        expected[st.studentId] = (expected[st.studentId]||0) + st.price;
+      });
+    });
+  });
+  const paidThisMonth = {};
+  payments.filter(p=>p.date.slice(0,7)===ym).forEach(p=>{ paidThisMonth[p.studentId] = (paidThisMonth[p.studentId]||0) + p.amount; });
+
+  const balanceRows = STATE.students.map(s=>{
+    const exp = expected[s.id]||0, paid = paidThisMonth[s.id]||0, diff = paid - exp;
+    if (!exp && !paid) return '';
+    return `<div class="list-item"><div style="font-weight:700;">${escapeHtml(studentFullName(s))}</div>
+      <div class="meta">Начислено: ${money(exp)} · Оплачено: ${money(paid)} ·
+      <span class="${diff>=0?'balance-good':'balance-bad'}">${diff>=0?'переплата/оплачено':'долг'} ${money(Math.abs(diff))}</span></div></div>`;
+  }).join('') || '<div class="empty-note">Нет данных за этот месяц</div>';
+
+  const addBtn = isAdmin() ? '<button class="btn btn-accent btn-sm" id="add-pay-btn">+ Оплата</button>' : '';
+  const payRows = payments.slice().sort((a,b)=>b.createdAt-a.createdAt).slice(0,30).map(p=>{
+    const s = STATE.students.find(x=>x.id===p.studentId);
+    return `<div class="list-item">
+      <div><div style="font-weight:700;">${s?escapeHtml(studentFullName(s)):'(ученик удалён)'}</div>
+      <div class="meta">${ruDate(p.date)}${p.comment?' · '+escapeHtml(p.comment):''}</div></div>
+      <div class="row" style="gap:8px;">
+        <div style="font-weight:800;">${money(p.amount)}</div>
+        ${isAdmin()?`<button class="btn btn-danger btn-sm del-pay" data-id="${p.id}">✕</button>`:''}
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty-note">Платежей ещё нет</div>';
+
+  c.innerHTML = `
+    <div class="card"><h2 class="serif">Баланс за ${ruMonth(CAL_YM)}</h2>${balanceRows}</div>
+    <div class="card"><h2>История оплат ${addBtn}</h2>${payRows}</div>
+  `;
+  $('#add-pay-btn')?.addEventListener('click', openAddPaymentDialog);
+  $$('.del-pay').forEach(b=>b.addEventListener('click', async ()=>{
+    if (!confirm('Удалить запись об оплате?')) return;
+    await api('/api/payments/'+b.dataset.id, {method:'DELETE'});
+    renderPayments();
+  }));
+}
+function openAddPaymentDialog(){
+  const options = STATE.students.map(s=>`<option value="${s.id}">${escapeHtml(studentFullName(s))}</option>`).join('');
+  const firstStudent = STATE.students[0];
+  const firstGroup = firstStudent ? STATE.groups.find(g=>g.id===firstStudent.groupId) : null;
+  showDialog('Новая оплата', `
+    <div class="field"><label>Ученик</label><select id="pd-student">${options}</select></div>
+    <div class="row" style="margin-top:10px;">
+      <div class="field"><label>Сумма</label><input id="pd-amount" type="number" value="${firstGroup?firstGroup.abonementPrice:8800}"></div>
+      <div class="field"><label>Дата</label><input id="pd-date" type="date" value="${todayStr()}"></div>
+    </div>
+    <div class="field" style="margin-top:10px;"><label>Комментарий</label><input id="pd-comment" placeholder="напр. за абонемент"></div>
+    <div class="row" style="margin-top:16px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeDialog()">Отмена</button>
+      <button class="btn btn-primary" id="pd-save">Сохранить</button>
+    </div>
+  `);
+  $('#pd-student').addEventListener('change', ()=>{
+    const st = STATE.students.find(x=>x.id===$('#pd-student').value);
+    const grp = st ? STATE.groups.find(g=>g.id===st.groupId) : null;
+    if (grp) $('#pd-amount').value = grp.abonementPrice;
+  });
+  $('#pd-save').addEventListener('click', async ()=>{
+    await api('/api/payments', {method:'POST', body: JSON.stringify({
+      studentId: $('#pd-student').value, amount: Number($('#pd-amount').value)||0, date: $('#pd-date').value, comment: $('#pd-comment').value.trim()
+    })});
+    closeDialog(); renderPayments();
+  });
+}
+
+// ══════════════════════════════ КОДЫ ДОСТУПА ══════════════════════════════
+function renderCodes(){
+  const c = $('#tab-codes');
+  const rows = STATE.codes.map(cd=>`
+    <div class="list-item">
+      <div><div style="font-weight:700;">${escapeHtml(cd.name)} <span class="badge-role">${cd.role==='admin'?'Админ':'Просмотр'}</span></div>
+      <div class="meta">Код: ${cd.code}</div></div>
+      <div class="row" style="gap:6px;">
+        <button class="btn btn-ghost btn-sm rename-code" data-code="${cd.code}" data-name="${escapeHtml(cd.name)}">✎</button>
+        <button class="btn btn-danger btn-sm del-code" data-code="${cd.code}">✕</button>
+      </div>
+    </div>
+  `).join('');
+  c.innerHTML = `<div class="card"><h2>Коды доступа</h2>${rows}
+    <div class="row" style="margin-top:14px;">
+      <div class="field"><label>Имя</label><input id="cd-name" placeholder="напр. Помощница"></div>
+      <div class="field"><label>Код (4–6 цифр)</label><input id="cd-code" inputmode="numeric" maxlength="6"></div>
+      <div class="field"><label>Роль</label><select id="cd-role"><option value="viewer">Просмотр</option><option value="admin">Админ</option></select></div>
+    </div>
+    <button class="btn btn-primary" id="cd-add-btn" style="margin-top:12px;">Добавить код</button>
+  </div>`;
+  $('#cd-add-btn').addEventListener('click', async ()=>{
+    try {
+      const r = await api('/api/codes', {method:'POST', body: JSON.stringify({
+        name: $('#cd-name').value.trim(), code: $('#cd-code').value.trim(), role: $('#cd-role').value
+      })});
+      STATE.codes = r.codes; renderCodes();
+    } catch(e){ alert(e.message); }
+  });
+  $$('.rename-code').forEach(b=>b.addEventListener('click', async ()=>{
+    const newName = prompt('Новое имя для этого кода:', b.dataset.name);
+    if (newName === null || !newName.trim()) return;
+    try {
+      const r = await api('/api/codes/'+encodeURIComponent(b.dataset.code), {method:'PUT', body: JSON.stringify({name:newName.trim()})});
+      STATE.codes = r.codes; renderCodes();
+      if (AUTH && AUTH.code===b.dataset.code) { AUTH.name = newName.trim(); localStorage.setItem('uchet_auth', JSON.stringify(AUTH)); $('#who-label').textContent = AUTH.name + ' · ' + (AUTH.role==='admin'?'администратор':'просмотр'); }
+    } catch(e){ alert(e.message); }
+  }));
+  $$('.del-code').forEach(b=>b.addEventListener('click', async ()=>{
+    if (!confirm('Удалить этот код доступа?')) return;
+    try {
+      const r = await api('/api/codes/'+encodeURIComponent(b.dataset.code), {method:'DELETE'});
+      STATE.codes = r.codes; renderCodes();
+    } catch(e){ alert(e.message); }
+  }));
+}
+
+// ── Диалоги / утилиты ────────────────────────────────────────────────────
+function showDialog(title, html){
+  $('#dlg-content').innerHTML = `<h3>${title}</h3>${html}`;
+  $('#dlg').showModal();
+}
+function closeDialog(){ $('#dlg').close(); }
+function escapeHtml(s){ return String(s??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+</script>
+</body>
+</html>
