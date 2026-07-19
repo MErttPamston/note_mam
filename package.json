@@ -1,7 +1,0 @@
-{
-  "name": "uchet-zanyatiy",
-  "version": "1.0.0",
-  "description": "Учёт учеников и занятий",
-  "scripts": { "start": "node server.js" },
-  "engines": { "node": ">=18" }
-}
